@@ -1,0 +1,6 @@
+@DishLab.API_HostAddress = http://localhost:5255
+
+GET {{DishLab.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
