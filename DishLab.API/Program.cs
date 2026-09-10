@@ -1,14 +1,23 @@
+using DishLab.API.Data;
+using DishLab.API.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Registrera DbContext med SQL Server
+builder.Services.AddDbContext<DishLabDBContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Registrera Identity för User
+builder.Services.AddIdentityApiEndpoints<User>()
+    .AddEntityFrameworkStores<DishLabDBContext>();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -16,7 +25,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+// Mappa inbyggda Identity Endpoints (Register, Login m.m.)
+app.MapGroup("/auth").MapIdentityApi<User>();
 
 app.MapControllers();
 
