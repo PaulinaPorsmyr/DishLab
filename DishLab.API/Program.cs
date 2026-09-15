@@ -28,6 +28,15 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.Use(async (context, next) =>
+{
+    //27 augusti tid 02.18
+
+    Console.WriteLine($"Request: {context.Request.Method} {context.Request.Path}");
+    await next();
+    Console.WriteLine($"Response: {context.Response.StatusCode}");
+});
+
 // Mappa inbyggda Identity Endpoints (Register, Login m.m.)
 app.MapGroup("/auth").MapIdentityApi<User>();
 
