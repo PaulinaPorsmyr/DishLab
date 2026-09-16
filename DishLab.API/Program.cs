@@ -2,6 +2,8 @@ using DishLab.API.Data;
 using DishLab.API.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using DishLab.API.Middleware;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
@@ -28,14 +31,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.Use(async (context, next) =>
-{
-    //27 augusti tid 02.18
-
-    Console.WriteLine($"Request: {context.Request.Method} {context.Request.Path}");
-    await next();
-    Console.WriteLine($"Response: {context.Response.StatusCode}");
-});
+app.UseMiddleware<SimpleMiddleware>();
 
 // Mappa inbyggda Identity Endpoints (Register, Login m.m.)
 app.MapGroup("/auth").MapIdentityApi<User>();
