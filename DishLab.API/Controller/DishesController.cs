@@ -1,10 +1,10 @@
-﻿using System.Security.Claims;
-using DishLab.API.Data;
+﻿using DishLab.API.Data;
 using DishLab.API.DTOs;
 using DishLab.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace DishLab.API.Controllers;
 
@@ -21,10 +21,10 @@ public class DishesController : ControllerBase
     }
 
     // Helper-metod för att hämta ID på den inloggade användaren från JWT/Cookie
-    private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-                
-    
+
+
                 // GET: api/dishes (Hämta alla rätter för den inloggade användaren)
                 [HttpGet]
                 public async Task<ActionResult<IEnumerable<DishDto>>> GetDishes()
@@ -143,3 +143,12 @@ public class DishesController : ControllerBase
                     return NoContent();
                 }
 }
+
+//Vanlig metod: IActionResult
+   // ↓
+//"Jag ger dig resultatet direkt"
+
+//Async metod:
+//Task<IActionResult>
+   // ↓
+//"Jag kommer att ge dig resultatet när det asynkrona arbetet är klart" 

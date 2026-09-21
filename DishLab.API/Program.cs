@@ -11,14 +11,25 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DishLabDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+
 // Registrera Identity för User
-builder.Services.AddIdentityApiEndpoints<User>()
+builder.Services.AddIdentityApiEndpoints<User>(options =>
+{
+    options.User.RequireUniqueEmail = true;
+
+}).AddRoles<IdentityRole<int>>()
     .AddEntityFrameworkStores<DishLabDBContext>();
+
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
+
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -34,7 +45,7 @@ app.UseAuthorization();
 app.UseMiddleware<SimpleMiddleware>();
 
 // Mappa inbyggda Identity Endpoints (Register, Login m.m.)
-app.MapGroup("/auth").MapIdentityApi<User>();
+app.MapIdentityApi<User>();
 
 app.MapControllers();
 

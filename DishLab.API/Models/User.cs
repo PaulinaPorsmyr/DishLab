@@ -2,7 +2,7 @@
 namespace DishLab.API.Models;
 
 
-    public class User : IdentityUser
+    public class User : IdentityUser<int>
 {
     public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
     public ICollection<Dish> Dishes { get; set; } = new List<Dish>();

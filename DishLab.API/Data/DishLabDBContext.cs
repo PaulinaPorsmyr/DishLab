@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using DishLab.API.Models;
 namespace DishLab.API.Data
 
 {
-    public class DishLabDBContext : IdentityDbContext<User>
+    public class DishLabDBContext : IdentityDbContext<User, IdentityRole<int>, int>
 
     {
 
@@ -21,6 +22,17 @@ namespace DishLab.API.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<IdentityRole<int>>().HasData(
+                new IdentityRole<int> 
+                { 
+                    Id = 1, 
+                    Name = "Admin", 
+                    NormalizedName = "ADMIN" 
+
+                });
+
+
 
             // Bryt kaskadraderingscykeln för Rating -> User
             builder.Entity<Rating>()

@@ -13,8 +13,7 @@ namespace DishLab.API.Models
         public DishVariation DishVariation { get; set; } = null!;
 
 
-        //Koppling till Identity User måste vara string eftersom IdentityUser.Id är en string
-        public string UserId { get; set; } = string.Empty;
+        public int UserId { get; set; } 
         public User User { get; set; } = null!;
     }
 }
