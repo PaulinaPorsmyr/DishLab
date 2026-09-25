@@ -28,8 +28,8 @@ namespace DishLab.API.Data
                 { 
                     Id = 1, 
                     Name = "Admin", 
-                    NormalizedName = "ADMIN" 
-
+                    NormalizedName = "ADMIN",
+                    ConcurrencyStamp = "STATIC-ADMIN-ROLE-STAMP"
                 });
 
 
