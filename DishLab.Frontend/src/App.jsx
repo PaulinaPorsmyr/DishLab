@@ -3,7 +3,7 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DishList from './components/DishList';
-
+import Navbar from './components/Navbar';
 
 export default function App() {
   return (

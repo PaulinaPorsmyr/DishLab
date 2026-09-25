@@ -1,34 +1,35 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useDishes } from '../hooks/useDishes';
+import CreateDish from './CreateDish';
 
 export default function DishList() {
-  const [dishes, setDishes] = useState([]);
+  const { dishes, loading, error, refreshDishes, removeDish } = useDishes();
 
-  async function getDishList() {
-    try {
-      // Ändrat till /api/Dishes (pluralis)
-      const response = await axios.get('https://localhost:7118/api/Dishes');
-      setDishes(response.data);
-    } catch (error) {
-      console.error('Error fetching dish list:', error);
-    }
+  if (loading) {
+    return <div>Laddar rätter...</div>;
   }
 
-  useEffect(() => {
-    getDishList();
-  }, []);
+  if (error) {
+    return <div style={{ color: 'red' }}>{error}</div>;
+  }
 
   return (
-    <>
-      <h1>List of Dishes</h1>
-      <ul>
-        {dishes.map((dish) => (
-          // Ändrat från dish.name till dish.title
-          <li key={dish.id}>
-            <strong>{dish.title}</strong> - {dish.description}
-          </li>
-        ))}
-      </ul>
-    </>
+    <div>
+      <CreateDish onDishCreated={refreshDishes} />
+      <hr />
+      <h2>Mina Rätter</h2>
+      {dishes.length === 0 ? (
+        <p>Inga rätter hittades.</p>
+      ) : (
+        <ul>
+          {dishes.map((dish) => (
+            <li key={dish.id} style={{ marginBottom: '1rem' }}>
+              <h3>{dish.title}</h3>
+              <p>{dish.description}</p>
+              <button onClick={() => removeDish(dish.id)}>Ta bort</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
