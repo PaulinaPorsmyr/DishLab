@@ -1,36 +1,38 @@
-﻿using DishLab.API.DTOs;
-using DishLab.API.Services;
+﻿using DishLab.API.DTO.DishDTOs;
 using DishLab.API.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using DishLab.API.Data;
 
 namespace DishLab.API.Controllers;
 
-// [Authorize] // Ta bort kommentarstecknen när inloggningen i frontend är klar!
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class DishesController : ControllerBase
 {
     private readonly IDishService _dishService;
+    private readonly DishLabDBContext _context;
 
-    // Injecta IDishService istället för DbContext
-    public DishesController(IDishService dishService)
+    public DishesController(IDishService dishService, DishLabDBContext context)
     {
         _dishService = dishService;
+        _context = context;
     }
 
-    // Säker hämtning av UserId (sätter dummy-id 1 om inte inloggad vid testning)
+    // Hämtar UserId från den verifierade JWT-token
     private int GetUserId()
     {
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (int.TryParse(userIdClaim, out int userId))
+
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
         {
-            return userId;
+            throw new UnauthorizedAccessException("Giltigt användar-ID saknas i token.");
         }
 
-        // Tillfällig fallback under testfasen om [Authorize] är avstängt
-        return 1;
+        return userId;
     }
 
     // GET: api/Dishes
@@ -38,7 +40,7 @@ public class DishesController : ControllerBase
     public async Task<ActionResult<IEnumerable<DishDto>>> GetDishes()
     {
         var userId = GetUserId();
-        var dishes = await _dishService.GetAllDishesAsync(userId);
+        var dishes = await _dishService.GetDishesAsync(userId);
         return Ok(dishes);
     }
 
@@ -95,5 +97,31 @@ public class DishesController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    // GET: api/Dishes/top
+    [HttpGet("top")]
+    public async Task<IActionResult> GetTopDishes()
+    {
+        var userId = GetUserId();
+
+        var topDishes = await _context.Dishes
+            .Where(d => d.UserId == userId)
+            .Select(d => new
+            {
+                DishId = d.Id,
+                DishName = d.Title,
+                AverageRating = d.Variations
+                    .SelectMany(v => v.Ratings)
+                    .Select(r => (double?)r.Score)
+                    .Average() ?? 0,
+                TotalRatings = d.Variations.SelectMany(v => v.Ratings).Count()
+            })
+            .Where(d => d.TotalRatings > 0)
+            .OrderByDescending(d => d.AverageRating)
+            .Take(5)
+            .ToListAsync();
+
+        return Ok(topDishes);
     }
 }

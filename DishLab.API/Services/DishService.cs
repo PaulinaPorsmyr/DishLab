@@ -1,83 +1,92 @@
-﻿using DishLab.API.DTO.DishDTOs;
+﻿using DishLab.API.Data;
+using DishLab.API.DTO.DishDTOs;
 using DishLab.API.Models;
-using DishLab.API.Repositories.IRepositories;
 using DishLab.API.Services.IServices;
+using Microsoft.EntityFrameworkCore;
 
-namespace DishLab.API.Services;
-
-public class DishService : IDishService
+namespace DishLab.API.Services
 {
-    private readonly IDishRepository _dishRepository;
-
-    public DishService(IDishRepository dishRepository)
+    public class DishService : IDishService
     {
-        _dishRepository = dishRepository;
-    }
+        private readonly DishLabDBContext _context;
 
-    public async Task<IEnumerable<DishDto>> GetAllDishesForUserAsync(int userId)
-    {
-        var dishes = await _dishRepository.GetAllByUserIdAsync(userId);
-        return dishes.Select(d => new DishDto
+        public DishService(DishLabDBContext context)
         {
-            Id = d.Id,
-            Title = d.Title,
-            Description = d.Description,
-            UserId = d.UserId
-        });
-    }
+            _context = context;
+        }
 
-    public async Task<DishDto?> GetDishByIdAsync(int id, int userId)
-    {
-        var dish = await _dishRepository.GetByIdAsync(id, userId);
-        if (dish == null) return null;
-
-        return new DishDto
+        public async Task<IEnumerable<DishDto>> GetDishesAsync(int userId)
         {
-            Id = dish.Id,
-            Title = dish.Title,
-            Description = dish.Description,
-            UserId = dish.UserId
-        };
-    }
+            return await _context.Dishes
+                .Where(d => d.UserId == userId)
+                .Select(d => new DishDto
+                {
+                    Id = d.Id,
+                    Title = d.Title,
+                    Description = d.Description
+                })
+                .ToListAsync();
+        }
 
-    public async Task<DishDto> CreateDishAsync(CreateDishDto dto, int userId)
-    {
-        var dish = new Dish
+        public async Task<DishDto?> GetDishByIdAsync(int id, int userId)
         {
-            Title = dto.Title,
-            Description = dto.Description,
-            UserId = userId
-        };
+            var dish = await _context.Dishes
+                .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
 
-        await _dishRepository.CreateAsync(dish);
+            if (dish == null) return null;
 
-        return new DishDto
+            return new DishDto
+            {
+                Id = dish.Id,
+                Title = dish.Title,
+                Description = dish.Description
+            };
+        }
+
+        public async Task<DishDto> CreateDishAsync(CreateDishDto dto, int userId)
         {
-            Id = dish.Id,
-            Title = dish.Title,
-            Description = dish.Description,
-            UserId = dish.UserId
-        };
-    }
+            var dish = new Dish
+            {
+                Title = dto.Title,
+                Description = dto.Description,
+                UserId = userId
+            };
 
-    public async Task<bool> UpdateDishAsync(int id, CreateDishDto dto, int userId)
-    {
-        var dish = await _dishRepository.GetByIdAsync(id, userId);
-        if (dish == null) return false;
+            _context.Dishes.Add(dish);
+            await _context.SaveChangesAsync();
 
-        dish.Title = dto.Title;
-        dish.Description = dto.Description;
+            return new DishDto
+            {
+                Id = dish.Id,
+                Title = dish.Title,
+                Description = dish.Description
+            };
+        }
 
-        await _dishRepository.UpdateAsync(dish);
-        return true;
-    }
+        public async Task<bool> UpdateDishAsync(int id, CreateDishDto dto, int userId)
+        {
+            var dish = await _context.Dishes
+                .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
 
-    public async Task<bool> DeleteDishAsync(int id, int userId)
-    {
-        var dish = await _dishRepository.GetByIdAsync(id, userId);
-        if (dish == null) return false;
+            if (dish == null) return false;
 
-        await _dishRepository.DeleteAsync(dish);
-        return true;
+            dish.Title = dto.Title;
+            dish.Description = dto.Description;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteDishAsync(int id, int userId)
+        {
+            var dish = await _context.Dishes
+                .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
+
+            if (dish == null) return false;
+
+            _context.Dishes.Remove(dish);
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

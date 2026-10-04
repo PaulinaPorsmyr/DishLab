@@ -1,7 +1,8 @@
-﻿using DishLab.API.DTO.IngredientDTOs;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using DishLab.API.Services.IServices;
+using DishLab.API.DTOs;
 
 namespace DishLab.API.Controllers
 {
@@ -22,7 +23,7 @@ namespace DishLab.API.Controllers
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var result = await _ingredientService.CreateAsync(variationId, dto, userId);
-            if (result == null) return NotFound("Variationm hittades inte eller tillhör inte dig.");
+            if (result == null) return NotFound("Variationen hittades inte eller tillhör inte dig.");
 
             return Ok(result);
         }
