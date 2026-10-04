@@ -1,50 +1,65 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api/axios';
+import { useState, useEffect, createContext } from 'react';
 
-const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem('token', token);
-      setUser({ token });
     } else {
-      delete api.defaults.headers.common['Authorization'];
       localStorage.removeItem('token');
-      setUser(null);
     }
-    setLoading(false);
   }, [token]);
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const newToken = response.data.token;
+      const response = await fetch('http://localhost:5255/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      setToken(newToken);
+      if (!response.ok) {
+        return { success: false, message: 'Inloggningen misslyckades. Kontrollera e-post och lösenord.' };
+      }
+
+      const data = await response.json();
+      setToken(data.accessToken);
+      setUser({ email });
       return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Felaktiga inloggningsuppgifter.',
-      };
+    } catch (err) {
+      console.error('Inloggningsfel:', err);
+      return { success: false, message: 'Kunde inte ansluta till servern.' };
     }
   };
 
   const register = async (email, password) => {
     try {
-      await api.post('/auth/register', { email, password });
+      const response = await fetch('http://localhost:5255/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        let errorMsg = 'Registreringen misslyckades.';
+        
+        if (errorData?.errors) {
+          errorMsg = Object.values(errorData.errors)[0]?.[0] || errorMsg;
+        }
+
+        return { success: false, message: errorMsg };
+      }
+
+      // Logga in automatiskt efter lyckad registrering
       return await login(email, password);
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Kunde inte skapa konto.',
-      };
+    } catch (err) {
+      console.error('Registreringsfel:', err);
+      return { success: false, message: 'Kunde inte ansluta till servern.' };
     }
   };
 
@@ -54,12 +69,8 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ token, user, register, login, logout }}>
+      {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }

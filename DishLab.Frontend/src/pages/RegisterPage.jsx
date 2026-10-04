@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth.js';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -13,11 +12,6 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (password !== confirmPassword) {
-      setError('Lösenorden matchar inte.');
-      return;
-    }
 
     const result = await register(email, password);
     if (result.success) {
@@ -52,17 +46,7 @@ export default function RegisterPage() {
             required
           />
         </div>
-        <div>
-          <label htmlFor="confirmPassword">Bekräfta lösenord:</label>
-          <input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Registrera</button>
+        <button type="submit">Registrera och logga in</button>
       </form>
       <p>
         Har du redan ett konto? <Link to="/login">Logga in här</Link>
