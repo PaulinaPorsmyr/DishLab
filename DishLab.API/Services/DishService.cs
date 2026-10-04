@@ -1,4 +1,4 @@
-﻿using DishLab.API.DTOs;
+﻿using DishLab.API.DTO.DishDTOs;
 using DishLab.API.Models;
 using DishLab.API.Repositories.IRepositories;
 using DishLab.API.Services.IServices;

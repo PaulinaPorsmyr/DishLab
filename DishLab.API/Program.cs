@@ -34,8 +34,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+              .AllowAnyMethod();
+              
     });
 });
 
@@ -54,7 +54,7 @@ app.UseHttpsRedirection();
 app.UseCors("FrontendDev");
 
 app.UseAuthentication();
-app.UseAuthorization();
+//app.UseAuthorization(); bortkommenterat när jag testar frontend
 
 app.UseMiddleware<SimpleMiddleware>();
 

@@ -1,26 +1,26 @@
-import api from '../api/axios';
+import api from './api';
 
-export async function getDishes() {
-  const response = await api.get('/Dishes');
+export const getDishes = async () => {
+  const response = await api.get('/dishes');
   return response.data;
-}
+};
 
-export async function getDishById(id) {
-  const response = await api.get(`/Dishes/${id}`);
+export const getDishById = async (id) => {
+  const response = await api.get(`/dishes/${id}`);
   return response.data;
-}
+};
 
-export async function createDish(dishData) {
-  const response = await api.post('/Dishes', dishData);
+export const createDish = async (dishData) => {
+  const response = await api.post('/dishes', dishData);
   return response.data;
-}
+};
 
-export async function updateDish(id, dishData) {
-  const response = await api.put(`/Dishes/${id}`, dishData);
+export const updateDish = async (id, dishData) => {
+  const response = await api.put(`/dishes/${id}`, dishData);
   return response.data;
-}
+};
 
-export async function deleteDish(id) {
-  const response = await api.delete(`/Dishes/${id}`);
+export const deleteDish = async (id) => {
+  const response = await api.delete(`/dishes/${id}`);
   return response.data;
-}
+};

@@ -1,154 +1,99 @@
-﻿using DishLab.API.Data;
-using DishLab.API.DTOs;
-using DishLab.API.Models;
+﻿using DishLab.API.DTOs;
+using DishLab.API.Services;
+using DishLab.API.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace DishLab.API.Controllers;
 
-[Authorize]
+// [Authorize] // Ta bort kommentarstecknen när inloggningen i frontend är klar!
 [ApiController]
 [Route("api/[controller]")]
 public class DishesController : ControllerBase
 {
-    private readonly DishLabDBContext _context;
+    private readonly IDishService _dishService;
 
-    public DishesController(DishLabDBContext context)
+    // Injecta IDishService istället för DbContext
+    public DishesController(IDishService dishService)
     {
-        _context = context;
+        _dishService = dishService;
     }
 
-    // Helper-metod för att hämta ID på den inloggade användaren från JWT/Cookie
-    private int GetUserId() => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    // Säker hämtning av UserId (sätter dummy-id 1 om inte inloggad vid testning)
+    private int GetUserId()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdClaim, out int userId))
+        {
+            return userId;
+        }
 
+        // Tillfällig fallback under testfasen om [Authorize] är avstängt
+        return 1;
+    }
 
+    // GET: api/Dishes
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<DishDto>>> GetDishes()
+    {
+        var userId = GetUserId();
+        var dishes = await _dishService.GetAllDishesAsync(userId);
+        return Ok(dishes);
+    }
 
-                // GET: api/dishes (Hämta alla rätter för den inloggade användaren)
-                [HttpGet]
-                public async Task<ActionResult<IEnumerable<DishDto>>> GetDishes()
-                {
-                    var userId = GetUserId();
+    // GET: api/Dishes/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<DishDto>> GetDish(int id)
+    {
+        var userId = GetUserId();
+        var dish = await _dishService.GetDishByIdAsync(id, userId);
 
-                    var dishes = await _context.Dishes
-                        .Where(d => d.UserId == userId)
-                        .Select(d => new DishDto
-                        {
-                            Id = d.Id,
-                            Title = d.Title,
-                            Description = d.Description,
-                            UserId = d.UserId
-                        })
-                        .ToListAsync();
+        if (dish == null)
+        {
+            return NotFound("Rätten hittades inte eller tillhör inte dig.");
+        }
 
-                    return Ok(dishes);
-                }
+        return Ok(dish);
+    }
 
-                // GET: api/dishes/5 (Hämta en specifik rätt)
-                [HttpGet("{id}")]
-                public async Task<ActionResult<DishDto>> GetDish(int id)
-                {
-                    var userId = GetUserId();
+    // POST: api/Dishes
+    [HttpPost]
+    public async Task<ActionResult<DishDto>> CreateDish(CreateDishDto dto)
+    {
+        var userId = GetUserId();
+        var createdDish = await _dishService.CreateDishAsync(dto, userId);
 
-                    var dish = await _context.Dishes
-                        .Where(d => d.Id == id && d.UserId == userId)
-                        .Select(d => new DishDto
-                        {
-                            Id = d.Id,
-                            Title = d.Title,
-                            Description = d.Description,
-                            UserId = d.UserId
-                        })
-                        .FirstOrDefaultAsync();
+        return CreatedAtAction(nameof(GetDish), new { id = createdDish.Id }, createdDish);
+    }
 
-                    if (dish == null)
-                    {
-                        return NotFound("Rätten hittades inte eller tillhör inte dig.");
-                    }
+    // PUT: api/Dishes/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateDish(int id, CreateDishDto dto)
+    {
+        var userId = GetUserId();
+        var updated = await _dishService.UpdateDishAsync(id, dto, userId);
 
-                    return Ok(dish);
-                }
+        if (!updated)
+        {
+            return NotFound("Rätten hittades inte eller tillhör inte dig.");
+        }
 
+        return NoContent();
+    }
 
+    // DELETE: api/Dishes/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteDish(int id)
+    {
+        var userId = GetUserId();
+        var deleted = await _dishService.DeleteDishAsync(id, userId);
 
-                // POST: api/dishes (Skapa en ny rätt)
-                [HttpPost]
-                public async Task<ActionResult<DishDto>> CreateDish(CreateDishDto dto)
-                {
-                    var userId = GetUserId();
+        if (!deleted)
+        {
+            return NotFound("Rätten hittades inte eller tillhör inte dig.");
+        }
 
-                    var dish = new Dish
-                    {
-                        Title = dto.Title,
-                        Description = dto.Description,
-                        UserId = userId
-                    };
-
-                    _context.Dishes.Add(dish);
-                    await _context.SaveChangesAsync();
-
-                    var responseDto = new DishDto
-                    {
-                        Id = dish.Id,
-                        Title = dish.Title,
-                        Description = dish.Description,
-                        UserId = dish.UserId
-                    };
-
-                    return CreatedAtAction(nameof(GetDish), new { id = dish.Id }, responseDto);
-                }
-
-
-
-                // PUT: api/dishes/5 (Uppdatera en befintlig rätt)
-                [HttpPut("{id}")]
-                public async Task<IActionResult> UpdateDish(int id, CreateDishDto dto)
-                {
-                    var userId = GetUserId();
-
-                    var dish = await _context.Dishes.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
-
-                    if (dish == null)
-                    {
-                        return NotFound("Rätten hittades inte eller tillhör inte dig.");
-                    }
-
-                    dish.Title = dto.Title;
-                    dish.Description = dto.Description;
-
-                    await _context.SaveChangesAsync();
-
-                    return NoContent();
-                }
-
-
-
-                // DELETE: api/dishes/5 (Ta bort en rätt)
-                [HttpDelete("{id}")]
-                public async Task<IActionResult> DeleteDish(int id)
-                {
-                    var userId = GetUserId();
-
-                    var dish = await _context.Dishes.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
-
-                    if (dish == null)
-                    {
-                        return NotFound("Rätten hittades inte eller tillhör inte dig.");
-                    }
-
-                    _context.Dishes.Remove(dish);
-                    await _context.SaveChangesAsync();
-
-                    return NoContent();
-                }
+        return NoContent();
+    }
 }
-
-//Vanlig metod: IActionResult
-   // ↓
-//"Jag ger dig resultatet direkt"
-
-//Async metod:
-//Task<IActionResult>
-   // ↓
-//"Jag kommer att ge dig resultatet när det asynkrona arbetet är klart" 

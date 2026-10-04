@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace DishLab.API.DTOs;
+namespace DishLab.API.DTO.DishDTOs;
 
 public class CreateDishDto
 {
