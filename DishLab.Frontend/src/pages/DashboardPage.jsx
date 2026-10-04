@@ -31,38 +31,55 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Mina Maträtter</h1>
+    <div className="container py-4">
+      <h1 className="mb-4">Mina Maträtter</h1>
 
       <DashboardSummary dishes={dishes} />
 
-      <form onSubmit={handleCreateDish} style={{ marginBottom: '20px' }}>
-        <h3>Skapa ny rätt</h3>
-        <input
-          type="text"
-          placeholder="Rättens namn"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Beskrivning"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
-        <button type="submit">Spara rätt</button>
-      </form>
+      <div className="card mb-4 shadow-sm">
+        <div className="card-body">
+          <h3 className="card-title h5 mb-3">Skapa ny rätt</h3>
+          <form onSubmit={handleCreateDish} className="row g-2">
+            <div className="col-md-5">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Rättens namn"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="col-md-5">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Beskrivning"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
+            </div>
+            <div className="col-md-2">
+              <button type="submit" className="btn btn-primary w-100">
+                Spara rätt
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
-      {dishes.map((dish) => (
-        <DishCard
-          key={dish.id}
-          dish={dish}
-          onDelete={handleDeleteDish}
-          onRefresh={fetchDishes}
-        />
-      ))}
+      <div className="row">
+        {dishes.map((dish) => (
+          <div key={dish.id} className="col-12">
+            <DishCard
+              dish={dish}
+              onDelete={handleDeleteDish}
+              onRefresh={fetchDishes}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

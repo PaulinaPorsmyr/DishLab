@@ -27,18 +27,23 @@ export default function DashboardSummary({ dishes }) {
   });
 
   return (
-    <div style={{ border: '2px solid green', padding: '15px', marginBottom: '20px' }}>
-      <h2>Dashboard / Sammanställning</h2>
-      <p>Totalt antal rätter: {dishes.length}</p>
-
-      {topDish ? (
-        <div>
-          <h3>Högst betygsatta rätten:</h3>
-          <p><strong>{topDish.name}</strong> ({highestAverage.toFixed(1)} / 5 i snittbetyg)</p>
-        </div>
-      ) : (
-        <p>Inga betyg satta än.</p>
-      )}
+    <div className="card border-success mb-4 shadow-sm">
+      <div className="card-header bg-success text-white">
+        <h2 className="h4 m-0">Dashboard / Sammanställning</h2>
+      </div>
+      <div className="card-body">
+        <p className="card-text">Totalt antal rätter: <strong>{dishes.length}</strong></p>
+        {topDish ? (
+          <div className="alert alert-success mb-0">
+            <h3 className="h5 alert-heading">Högst betygsatta rätten:</h3>
+            <p className="mb-0">
+              <strong>{topDish.name}</strong> — {highestAverage.toFixed(1)} / 5 i snittbetyg
+            </p>
+          </div>
+        ) : (
+          <p className="text-muted mb-0">Inga betyg satta än.</p>
+        )}
+      </div>
     </div>
   );
 }
