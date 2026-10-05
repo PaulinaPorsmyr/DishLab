@@ -24,3 +24,8 @@ export const deleteDish = async (id) => {
   const response = await api.delete(`/dishes/${id}`);
   return response.data;
 };
+
+export const getTopDishes = async () => {
+  const response = await api.get('/dishes/top');
+  return response.data;
+};

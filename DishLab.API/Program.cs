@@ -25,11 +25,15 @@ builder.Services.AddIdentityApiEndpoints<User>(options =>
 
 // Repositories
 builder.Services.AddScoped<IDishRepository, DishRepository>();
+builder.Services.AddScoped<IDishVariationRepository, DishVariationRepository>();
+builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
+builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 
-// Services (Registrera alla tre servicat här)
+// Services
 builder.Services.AddScoped<IDishService, DishService>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IDishVariationService, DishVariationService>();
+builder.Services.AddScoped<IRatingService, RatingService>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -59,7 +63,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendDev");
-
 app.UseAuthentication();
 app.UseAuthorization();
 
