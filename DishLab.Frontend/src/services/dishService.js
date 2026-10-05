@@ -29,3 +29,13 @@ export const getTopDishes = async () => {
   const response = await api.get('/dishes/top');
   return response.data;
 };
+
+export const getTopCookingMethods = async () => {
+  const response = await api.get('/dishvariations/top');
+  return response.data;
+};
+
+export const getTopIngredients = async () => {
+  const response = await api.get('/ingredients/top');
+  return response.data;
+};
