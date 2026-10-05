@@ -1,161 +1,266 @@
 import { useState } from 'react';
-import { createVariation } from '../services/variationService';
-import { addIngredient } from '../services/ingredientService';
-import { addRating } from '../services/ratingService';
+import { createVariation, deleteVariation, createIngredient, createRating } from '../services/variationService';
+import CreateDishVariationDialog from './CreateDishVariationDialog';
+import { createDishIngredient } from '../services/dishService';
 
-export default function DishCard({ dish, onDelete, onRefresh }) {
-  const [cookingMethod, setCookingMethod] = useState('');
-  const [outcome, setOutcome] = useState('');
+export default function DishCard({ dish, onDelete, onEdit, refreshData }) {
+  const [open, setOpen] = useState(false);
+  const [isVariationModalOpen, setIsVariationModalOpen] = useState(false);
+  const [inputs, setInputs] = useState({});
+  const [dishIngInput, setDishIngInput] = useState({ name: '', amount: '', unit: '' });
 
-  const [ingName, setIngName] = useState('');
-  const [ingAmount, setIngAmount] = useState(1);
-  const [ingUnit, setIngUnit] = useState('');
-
-  const [score, setScore] = useState(5);
-  const [comment, setComment] = useState('');
-
-  const [selectedVariationId, setSelectedVariationId] = useState(null);
-
-  const handleAddVariation = async (e) => {
-    e.preventDefault();
-    await createVariation(dish.id, { cookingMethod, outcome });
-    setCookingMethod('');
-    setOutcome('');
-    onRefresh();
+  const handleInputChange = (varId, field, value) => {
+    setInputs(prev => ({
+      ...prev,
+      [varId]: { ...prev[varId], [field]: value }
+    }));
   };
 
-  const handleAddIngredient = async (e) => {
-    e.preventDefault();
-    await addIngredient(selectedVariationId, { 
-      name: ingName, 
-      amount: Number(ingAmount), 
-      unit: ingUnit 
+  // Skapa Variant
+  const handleAddVariation = async (dishId, variationData) => {
+    try {
+      await createVariation(dishId, variationData);
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Fel vid skapande av variant:', err);
+      throw err;
+    }
+  };
+
+  // Skapa Ingrediens på VARIANT
+  const handleAddIngredientToVariation = async (varId) => {
+    const varInput = inputs[varId] || {};
+    const name = varInput.ingName?.trim();
+    const amount = Number(varInput.ingAmount);
+    const unit = varInput.ingUnit?.trim();
+
+    if (!name || !amount || !unit) {
+      alert('Fyll i Mängd (heltal), Enhet och Namn.');
+      return;
+    }
+
+    try {
+      await createIngredient(varId, { name, amount, unit });
+      handleInputChange(varId, 'ingName', '');
+      handleInputChange(varId, 'ingAmount', '');
+      handleInputChange(varId, 'ingUnit', '');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Ingrediensfel:', err);
+      alert('Kunde inte spara ingrediens.');
+    }
+  };
+
+
+const handleAddIngredientToDish = async () => {
+  const { name, amount, unit } = dishIngInput;
+  if (!name.trim() || !amount || !unit.trim()) {
+    alert('Fyll i Mängd, Enhet och Namn för rättens ingrediens.');
+    return;
+  }
+
+  try {
+    // Spara ingrediensen till databasen
+    await createDishIngredient(dish.id || dish.Id, { 
+      name: name.trim(), 
+      amount: Number(amount), 
+      unit: unit.trim() 
     });
-    setIngName('');
-    setIngAmount(1);
-    setIngUnit('');
-    setSelectedVariationId(null);
-    onRefresh();
+
+    setDishIngInput({ name: '', amount: '', unit: '' });
+    if (refreshData) await refreshData(); // Ladda om rätterna
+  } catch (err) {
+    console.error('Fel vid tillägg av ingrediens på rätt:', err);
+    alert('Kunde inte spara ingrediens på rätten.');
+  }
+};
+
+  // Skapa Betyg
+  const handleRate = async (varId, score) => {
+    const comment = inputs[varId]?.comment?.trim() || null;
+    try {
+      await createRating({ dishVariationId: varId, score, comment });
+      handleInputChange(varId, 'comment', '');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Betygsfel:', err);
+    }
   };
 
-  const handleAddRating = async (e) => {
-    e.preventDefault();
-    await addRating(selectedVariationId, { 
-      score: Number(score), 
-      comment 
-    });
-    setComment('');
-    setSelectedVariationId(null);
-    onRefresh();
+  const getAverageRating = (ratings = []) => {
+    if (!ratings || ratings.length === 0) return null;
+    const sum = ratings.reduce((acc, r) => acc + (r.score || r.Score), 0);
+    return (sum / ratings.length).toFixed(1);
   };
+
+  const variationsList = dish.variations || dish.Variations || [];
+  const dishIngredients = dish.ingredients || dish.Ingredients || [];
 
   return (
-    <div className="card mb-3 shadow-sm">
-      <div className="card-body">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h2 className="h4 m-0">{dish.name}</h2>
-          <button className="btn btn-outline-danger btn-sm" onClick={() => onDelete(dish.id)}>
-            Ta bort rätt
-          </button>
+    <div style={styles.card}>
+      {/* HEADER */}
+      <div style={styles.header}>
+        <div>
+          <h3 style={{ margin: 0 }}>{dish.title || dish.Title || dish.name}</h3>
+          <p style={{ margin: '4px 0 0', color: '#666', fontSize: '0.9rem' }}>{dish.description || dish.Description}</p>
         </div>
-        <p className="text-muted">{dish.description}</p>
-
-        <hr />
-
-        <h3 className="h5 mb-3">Variationer</h3>
-        {dish.variations && dish.variations.map((v) => (
-          <div key={v.id} className="card bg-light mb-3">
-            <div className="card-body">
-              <p className="mb-1"><strong>Metod:</strong> {v.cookingMethod}</p>
-              <p className="mb-2"><strong>Resultat:</strong> {v.outcome}</p>
-
-              <div className="row">
-                <div className="col-md-6">
-                  <strong>Ingredienser:</strong>
-                  <ul className="list-unstyled ms-2">
-                    {v.ingredients && v.ingredients.map((i) => (
-                      <li key={i.id}>• {i.amount} {i.unit} {i.name}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="col-md-6">
-                  <strong>Betyg:</strong>
-                  <ul className="list-unstyled ms-2">
-                    {v.ratings && v.ratings.map((r) => (
-                      <li key={r.id}>★ {r.score}/5 {r.comment && `- ${r.comment}`}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-
-              <button 
-                className="btn btn-outline-primary btn-sm mt-2" 
-                onClick={() => setSelectedVariationId(v.id)}
-              >
-                Lägg till ingrediens/betyg här
-              </button>
-
-              {selectedVariationId === v.id && (
-                <div className="border rounded p-3 bg-white mt-3">
-                  <h4 className="h6">Ny ingrediens</h4>
-                  <form onSubmit={handleAddIngredient} className="row g-2 mb-3">
-                    <div className="col-md-4">
-                      <input className="form-control form-control-sm" placeholder="Namn" value={ingName} onChange={(e) => setIngName(e.target.value)} required />
-                    </div>
-                    <div className="col-md-3">
-                      <input className="form-control form-control-sm" type="number" value={ingAmount} onChange={(e) => setIngAmount(e.target.value)} required />
-                    </div>
-                    <div className="col-md-3">
-                      <input className="form-control form-control-sm" placeholder="Enhet (g, msk)" value={ingUnit} onChange={(e) => setIngUnit(e.target.value)} required />
-                    </div>
-                    <div className="col-md-2">
-                      <button type="submit" className="btn btn-success btn-sm w-100">Spara</button>
-                    </div>
-                  </form>
-
-                  <h4 className="h6">Nytt betyg</h4>
-                  <form onSubmit={handleAddRating} className="row g-2 mb-2">
-                    <div className="col-md-3">
-                      <select className="form-select form-select-sm" value={score} onChange={(e) => setScore(e.target.value)}>
-                        <option value="5">5 ★</option>
-                        <option value="4">4 ★</option>
-                        <option value="3">3 ★</option>
-                        <option value="2">2 ★</option>
-                        <option value="1">1 ★</option>
-                      </select>
-                    </div>
-                    <div className="col-md-7">
-                      <input className="form-control form-control-sm" placeholder="Kommentar" value={comment} onChange={(e) => setComment(e.target.value)} />
-                    </div>
-                    <div className="col-md-2">
-                      <button type="submit" className="btn btn-success btn-sm w-100">Spara</button>
-                    </div>
-                  </form>
-
-                  <button className="btn btn-link btn-sm text-secondary p-0" onClick={() => setSelectedVariationId(null)}>
-                    Stäng
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-
-        <div className="border-top pt-3 mt-3">
-          <h4 className="h6">Skapa ny variation</h4>
-          <form onSubmit={handleAddVariation} className="row g-2">
-            <div className="col-md-5">
-              <input className="form-control form-control-sm" placeholder="Tillagningssätt" value={cookingMethod} onChange={(e) => setCookingMethod(e.target.value)} required />
-            </div>
-            <div className="col-md-5">
-              <input className="form-control form-control-sm" placeholder="Resultat" value={outcome} onChange={(e) => setOutcome(e.target.value)} required />
-            </div>
-            <div className="col-md-2">
-              <button type="submit" className="btn btn-secondary btn-sm w-100">Spara variation</button>
-            </div>
-          </form>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <button onClick={() => setOpen(!open)} style={styles.btnSec}>
+            {open ? 'Dölj detaljer' : `Detaljer & Varianter (${variationsList.length})`}
+          </button>
+          <button onClick={() => onEdit(dish)} style={styles.btnSec}>Redigera</button>
+          <button onClick={() => onDelete(dish.id || dish.Id)} style={styles.btnDanger}>Ta bort</button>
         </div>
       </div>
+
+      {/* EXPANDERAT INNEHÅLL */}
+      {open && (
+        <div style={styles.body}>
+          
+          {/* SEKTION 1: INGREDIENSER PÅ RÄTTEN */}
+          <div style={styles.sectionBox}>
+            <h4 style={{ margin: '0 0 8px 0' }}>🌿 Huvudingredienser (Rätt)</h4>
+            <div style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
+              <span style={{ color: '#4b5563' }}>
+                {dishIngredients.length > 0 
+                  ? dishIngredients.map(i => `${i.amount || i.Amount} ${i.unit || i.Unit} ${i.name || i.Name}`).join(', ')
+                  : 'Inga huvudingredienser tillagda.'}
+              </span>
+            </div>
+
+            {/* Formular för att lägga till ingrediens på rätten */}
+            <div style={styles.row}>
+              <input 
+                placeholder="Mängd" 
+                type="number"
+                value={dishIngInput.amount} 
+                onChange={e => setDishIngInput({ ...dishIngInput, amount: e.target.value })} 
+                style={{ ...styles.input, width: '80px' }}
+              />
+              <input 
+                placeholder="Enhet" 
+                value={dishIngInput.unit} 
+                onChange={e => setDishIngInput({ ...dishIngInput, unit: e.target.value })} 
+                style={{ ...styles.input, width: '80px' }}
+              />
+              <input 
+                placeholder="Ingrediens" 
+                value={dishIngInput.name} 
+                onChange={e => setDishIngInput({ ...dishIngInput, name: e.target.value })} 
+                style={{ ...styles.input, flex: 1 }}
+              />
+              <button onClick={handleAddIngredientToDish} style={styles.btnSec}>+ Lägg till på rätt</button>
+            </div>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '16px 0' }} />
+
+          {/* SEKTION 2: VARIANTER */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h4 style={{ margin: 0 }}>Varianter</h4>
+            <button onClick={() => setIsVariationModalOpen(true)} style={styles.btnPrimary}>
+              + Ny Variant
+            </button>
+          </div>
+
+          <CreateDishVariationDialog 
+            isOpen={isVariationModalOpen}
+            onClose={() => setIsVariationModalOpen(false)}
+            onSubmit={handleAddVariation}
+            dishId={dish.id || dish.Id}
+          />
+
+          {variationsList.map(v => {
+            const vId = v.id || v.Id;
+            const cookingMethod = v.cookingMethod || v.CookingMethod;
+            const outcome = v.outcome || v.Outcome;
+            const ingredients = v.ingredients || v.Ingredients || [];
+            const ratings = v.ratings || v.Ratings || [];
+            const avgRating = getAverageRating(ratings);
+            const varInput = inputs[vId] || {};
+
+            return (
+              <div key={vId} style={styles.varBox}>
+                <div style={styles.header}>
+                  <div>
+                    <strong>🔥 {cookingMethod}</strong>
+                    <span style={{ marginLeft: '8px', color: '#666', fontSize: '0.9rem' }}>({outcome})</span>
+                    {avgRating && <span style={styles.avgBadge}>⭐ {avgRating} / 5</span>}
+                  </div>
+                  <button onClick={async () => { await deleteVariation(vId); refreshData(); }} style={styles.btnText}>
+                    ✖
+                  </button>
+                </div>
+
+                <div style={{ fontSize: '0.85rem' }}>
+                  <strong>🌿 Variantens ingredienser: </strong>
+                  <span style={{ color: '#4b5563' }}>
+                    {ingredients.length > 0 
+                      ? ingredients.map(i => `${i.amount || i.Amount} ${i.unit || i.Unit} ${i.name || i.Name}`).join(', ')
+                      : 'Inga extra ingredienser'}
+                  </span>
+                </div>
+
+                <div style={styles.row}>
+                  <input 
+                    placeholder="Mängd" 
+                    type="number"
+                    value={varInput.ingAmount || ''} 
+                    onChange={e => handleInputChange(vId, 'ingAmount', e.target.value)} 
+                    style={{ ...styles.input, width: '80px' }}
+                  />
+                  <input 
+                    placeholder="Enhet" 
+                    value={varInput.ingUnit || ''} 
+                    onChange={e => handleInputChange(vId, 'ingUnit', e.target.value)} 
+                    style={{ ...styles.input, width: '80px' }}
+                  />
+                  <input 
+                    placeholder="Ingrediens" 
+                    value={varInput.ingName || ''} 
+                    onChange={e => handleInputChange(vId, 'ingName', e.target.value)} 
+                    style={{ ...styles.input, flex: 1 }}
+                  />
+                  <button onClick={() => handleAddIngredientToVariation(vId)} style={styles.btnSec}>+ Ingrediens</button>
+                </div>
+
+                <div style={styles.ratingBox}>
+                  <input 
+                    placeholder="Kommentar..." 
+                    value={varInput.comment || ''} 
+                    onChange={e => handleInputChange(vId, 'comment', e.target.value)} 
+                    style={{ ...styles.input, flex: 1 }}
+                  />
+                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button key={star} type="button" onClick={() => handleRate(vId, star)} style={styles.starBtn}>
+                        ★ {star}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
+
+const styles = {
+  card: { padding: '16px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff', marginBottom: '12px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  body: { marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' },
+  sectionBox: { background: '#f3f4f6', padding: '12px', borderRadius: '6px' },
+  varBox: { padding: '12px', background: '#f9f9f9', borderRadius: '6px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px solid #eaeaea' },
+  row: { display: 'flex', gap: '6px', alignItems: 'center' },
+  ratingBox: { display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', paddingTop: '6px', borderTop: '1px dashed #ddd' },
+  input: { padding: '6px 8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '0.85rem' },
+  starBtn: { border: '1px solid #f59e0b', background: '#fffbe8', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', color: '#b45309' },
+  avgBadge: { marginLeft: '10px', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' },
+  btnPrimary: { background: '#2563eb', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' },
+  btnSec: { background: '#e5e7eb', color: '#374151', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' },
+  btnDanger: { background: '#ef4444', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' },
+  btnText: { color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.1rem' }
+};

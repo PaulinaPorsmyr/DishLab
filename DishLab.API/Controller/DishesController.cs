@@ -1,10 +1,11 @@
-﻿using DishLab.API.DTO.DishDTOs;
+﻿using DishLab.API.Data;
+using DishLab.API.DTO.DishDTOs;
+using DishLab.API.Models;
 using DishLab.API.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using DishLab.API.Data;
 
 namespace DishLab.API.Controllers;
 
@@ -37,10 +38,16 @@ public class DishesController : ControllerBase
 
     // GET: api/Dishes
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<DishDto>>> GetDishes()
+    public async Task<IActionResult> GetDishes()
     {
         var userId = GetUserId();
-        var dishes = await _dishService.GetDishesAsync(userId);
+        var dishes = await _context.Dishes
+            .Where(d => d.UserId == userId)
+            .Include(d => d.Ingredients) // <- Lägg till denna!
+            .Include(d => d.Variations)
+                .ThenInclude(v => v.Ratings)
+            .ToListAsync();
+
         return Ok(dishes);
     }
 
@@ -123,5 +130,25 @@ public class DishesController : ControllerBase
             .ToListAsync();
 
         return Ok(topDishes);
+    }
+
+
+    [HttpPost("{dishId}/ingredients")]
+    public async Task<IActionResult> AddIngredientToDish(int dishId, [FromBody] Ingredient ingredient)
+    {
+        var userId = GetUserId();
+        var dish = await _context.Dishes
+            .FirstOrDefaultAsync(d => d.Id == dishId && d.UserId == userId);
+
+        if (dish == null)
+        {
+            return NotFound("Rätten hittades inte.");
+        }
+
+        ingredient.DishId = dishId;
+        _context.Ingredients.Add(ingredient);
+        await _context.SaveChangesAsync();
+
+        return Ok(ingredient);
     }
 }

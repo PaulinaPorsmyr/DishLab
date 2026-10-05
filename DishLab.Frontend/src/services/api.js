@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Skapa Axios-instans med grundläggande konfiguration
 const api = axios.create({
-  baseURL: 'http://localhost:5255/api', // Observera /api här eftersom dina controllers använder [Route("api/[controller]")]
+  baseURL: 'http://localhost:5255/api', // api här eftersom controllers använder [Route("api/[controller]")]
   headers: {
     'Content-Type': 'application/json',
   },

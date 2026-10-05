@@ -13,6 +13,7 @@
 
         //En rätt har flera variationer, men en variation tillhör bara en rätt.
         public ICollection<DishVariation> Variations { get; set; } = new List<DishVariation>();
+        public List<Ingredient> Ingredients { get; set; } = new();
 
     }
 }

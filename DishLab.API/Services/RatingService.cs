@@ -1,5 +1,4 @@
 ﻿using DishLab.API.DTOs;
-using DishLab.API.DTOs.RatingDTOs;
 using DishLab.API.Models;
 using DishLab.API.Repositories;
 using DishLab.API.Services.IServices;

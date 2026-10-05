@@ -1,10 +1,12 @@
-import { useState, useEffect, createContext } from 'react';
-
-export const AuthContext = createContext(null);
+import { useState, useEffect } from 'react';
+import { AuthContext } from './AuthContext';
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedEmail = localStorage.getItem('userEmail');
+    return savedEmail ? { email: savedEmail } : null;
+  });
 
   useEffect(() => {
     if (token) {
@@ -29,6 +31,7 @@ export function AuthProvider({ children }) {
       const data = await response.json();
       setToken(data.accessToken);
       setUser({ email });
+      localStorage.setItem('userEmail', email); // 👈 Spara e-posten
       return { success: true };
     } catch (err) {
       console.error('Inloggningsfel:', err);
@@ -55,7 +58,6 @@ export function AuthProvider({ children }) {
         return { success: false, message: errorMsg };
       }
 
-      // Logga in automatiskt efter lyckad registrering
       return await login(email, password);
     } catch (err) {
       console.error('Registreringsfel:', err);
@@ -66,6 +68,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setToken(null);
     setUser(null);
+    localStorage.removeItem('userEmail'); // 👈 Rensa vid utloggning
   };
 
   return (

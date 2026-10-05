@@ -1,12 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace DishLab.API.DTOs
+﻿namespace DishLab.API.DTOs
 {
     public class CreateRatingDto
     {
-        [Range(1, 5)]
+        public int DishVariationId { get; set; } // 👈 Lägg till denna
         public int Score { get; set; }
-
         public string? Comment { get; set; }
     }
 }
