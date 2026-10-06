@@ -2,17 +2,14 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using DishLab.API.Models;
-namespace DishLab.API.Data
 
+namespace DishLab.API.Data
 {
     public class DishLabDBContext : IdentityDbContext<User, IdentityRole<int>, int>
-
     {
-
         public DishLabDBContext(DbContextOptions<DishLabDBContext> options) : base(options)
         {
         }
-
 
         public DbSet<Dish> Dishes { get; set; }
         public DbSet<DishVariation> DishVariations { get; set; }
@@ -24,24 +21,29 @@ namespace DishLab.API.Data
             base.OnModelCreating(builder);
 
             builder.Entity<IdentityRole<int>>().HasData(
-                new IdentityRole<int> 
-                { 
-                    Id = 1, 
-                    Name = "Admin", 
+                new IdentityRole<int>
+                {
+                    Id = 1,
+                    Name = "Admin",
                     NormalizedName = "ADMIN",
                     ConcurrencyStamp = "STATIC-ADMIN-ROLE-STAMP"
                 });
 
-
-
-            // Bryt kaskadraderingscykeln för Rating -> User
+           
             builder.Entity<Rating>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Ratings)
                 .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.Restrict); // Ändrat till Restrict
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Index för sökning, filtrering och sortering
+            builder.Entity<Dish>()
+                .HasIndex(d => d.Title)
+                .HasDatabaseName("IX_Dishes_Title");
+
+            builder.Entity<Dish>()
+                .HasIndex(d => d.UserId)
+                .HasDatabaseName("IX_Dishes_UserId");
         }
     }
-
-
 }
