@@ -8,14 +8,13 @@ using DishLab.API.Services.IServices;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Databas
 builder.Services.AddDbContext<DishLabDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity
 builder.Services.AddIdentityApiEndpoints<User>(options =>
 {
     options.User.RequireUniqueEmail = true;
@@ -23,33 +22,52 @@ builder.Services.AddIdentityApiEndpoints<User>(options =>
 .AddRoles<IdentityRole<int>>()
 .AddEntityFrameworkStores<DishLabDBContext>();
 
-// Repositories
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+
 builder.Services.AddScoped<IDishRepository, DishRepository>();
 builder.Services.AddScoped<IDishVariationRepository, DishVariationRepository>();
 builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
 builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 
-// Services
 builder.Services.AddScoped<IDishService, DishService>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IDishVariationService, DishVariationService>();
 builder.Services.AddScoped<IRatingService, RatingService>();
 
-builder.Services.AddControllers();
+// --- 4. Controllers & JSON-konfiguration ---
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
+
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
 
-// CORS för React frontend
+
+var frontendDomain = builder.Configuration["Frontend_Domain"] ?? "http://localhost:5173";
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendDev", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(frontendDomain)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -58,7 +76,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<SimpleMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -68,10 +88,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendDev");
+
 app.UseAuthentication();
 app.UseAuthorization();
-
-app.UseMiddleware<SimpleMiddleware>();
 
 app.MapGroup("/auth").MapIdentityApi<User>();
 app.MapControllers();
