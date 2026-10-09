@@ -6,6 +6,7 @@ on:
       - 'main'
     paths:
       - 'DishLab.Frontend/**'
+      - '.github/workflows/main_Dishlab-frontend.yml'
   workflow_dispatch:
 
 jobs:
