@@ -12,8 +12,10 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 builder.Services.AddDbContext<DishLabDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 builder.Services.AddIdentityApiEndpoints<User>(options =>
 {
@@ -21,7 +23,6 @@ builder.Services.AddIdentityApiEndpoints<User>(options =>
 })
 .AddRoles<IdentityRole<int>>()
 .AddEntityFrameworkStores<DishLabDBContext>();
-
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -50,7 +51,7 @@ builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IDishVariationService, DishVariationService>();
 builder.Services.AddScoped<IRatingService, RatingService>();
 
-// --- 4. Controllers & JSON-konfiguration ---
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -61,13 +62,17 @@ builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
 
 
-var frontendDomain = builder.Configuration["Frontend_Domain"] ?? "http://localhost:5173";
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[]
+{
+    "http://localhost:5173",
+    "https://dishlab-frontend-hyabdycravejayb5.norwayeast-01.azurewebsites.net"
+};
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendDev", policy =>
     {
-        policy.WithOrigins(frontendDomain)
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -76,11 +81,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<SimpleMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Aktivera Scalar i både Dev och Azure 
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
