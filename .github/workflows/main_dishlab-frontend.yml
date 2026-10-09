@@ -27,6 +27,12 @@ jobs:
           npm ci || npm install
           npm run build
 
+      - name: Copy web.config to dist if missing
+        run: |
+          if [ -f DishLab.Frontend/public/web.config ]; then
+            cp DishLab.Frontend/public/web.config DishLab.Frontend/dist/web.config
+          fi
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
