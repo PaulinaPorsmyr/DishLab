@@ -1,14 +1,14 @@
 import axios from 'axios';
 
-// Skapa Axios-instans med grundläggande konfiguration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5255';
+
 const api = axios.create({
-  baseURL: 'http://localhost:5255/api', // api här eftersom controllers använder [Route("api/[controller]")]
+  baseURL: `${API_BASE_URL}/api`,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor: Bifoga Bearer-token på alla utgående anrop om den finns i localStorage
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -20,7 +20,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: Hantera utgångna tokens (401 Unauthorized)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
