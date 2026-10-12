@@ -24,7 +24,7 @@ jobs:
       - name: Install and Build Frontend
         working-directory: DishLab.Frontend
         env:
-          VITE_API_URL: "https://dishlab-api-hyabdycravejayb5.norwayeast-01.azurewebsites.net"
+          VITE_API_URL: "https://dishlab-api-g0adafdvgfeqdean.norwayeast-01.azurewebsites.net"
         run: |
           npm ci || npm install
           npm run build
