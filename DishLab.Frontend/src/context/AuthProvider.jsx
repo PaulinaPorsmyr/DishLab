@@ -1,28 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AuthContext } from './AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5255';
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
     const savedEmail = localStorage.getItem('userEmail');
     return savedEmail ? { email: savedEmail } : null;
   });
 
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
-    }
-  }, [token]);
-
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login?useCookies=true`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -30,8 +22,6 @@ export function AuthProvider({ children }) {
         return { success: false, message: 'Inloggningen misslyckades. Kontrollera e-post och lösenord.' };
       }
 
-      const data = await response.json();
-      setToken(data.accessToken);
       setUser({ email });
       localStorage.setItem('userEmail', email);
       return { success: true };
@@ -46,6 +36,7 @@ export function AuthProvider({ children }) {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -67,14 +58,14 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    setToken(null);
+  const logout = async () => {
     setUser(null);
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('token');
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, register, login, logout }}>
+    <AuthContext.Provider value={{ user, register, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
