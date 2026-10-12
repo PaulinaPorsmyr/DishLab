@@ -3,6 +3,7 @@ using DishLab.API.Middleware;
 using DishLab.API.Models;
 using DishLab.API.Repositories;
 using DishLab.API.Repositories.IRepositories;
+using DishLab.API.Service;
 using DishLab.API.Services;
 using DishLab.API.Services.IServices;
 using Microsoft.AspNetCore.Identity;
@@ -12,10 +13,8 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddDbContext<DishLabDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 builder.Services.AddIdentityApiEndpoints<User>(options =>
 {
@@ -40,7 +39,6 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
-
 builder.Services.AddScoped<IDishRepository, DishRepository>();
 builder.Services.AddScoped<IDishVariationRepository, DishVariationRepository>();
 builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
@@ -51,7 +49,6 @@ builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IDishVariationService, DishVariationService>();
 builder.Services.AddScoped<IRatingService, RatingService>();
 
-
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -60,7 +57,6 @@ builder.Services.AddControllers()
 
 builder.Services.AddOpenApi();
 builder.Services.AddAuthorization();
-
 
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[]
 {
@@ -84,7 +80,6 @@ var app = builder.Build();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<SimpleMiddleware>();
 
-// Aktivera Scalar i både Dev och Azure 
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.MapOpenApi();
@@ -99,5 +94,13 @@ app.UseAuthorization();
 
 app.MapGroup("/auth").MapIdentityApi<User>();
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<DishLabDBContext>();
+    context.Database.Migrate();
+}
+
+await app.SeedAdminUser();
 
 app.Run();
