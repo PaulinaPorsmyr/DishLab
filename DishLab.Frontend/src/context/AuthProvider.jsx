@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AuthContext } from './AuthContext';
-import api from '../services/api';
+import { authApi } from '../services/api';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -10,21 +10,23 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      await api.post('/auth/login?useCookies=true', { email, password });
-
+      await authApi.post('/auth/login?useCookies=true', { email, password });
+      
       setUser({ email });
       localStorage.setItem('userEmail', email);
       return { success: true };
     } catch (err) {
       console.error('Inloggningsfel:', err);
-      const message = err.response?.data?.title || 'Inloggningen misslyckades. Kontrollera e-post och lösenord.';
-      return { success: false, message };
+      return { 
+        success: false, 
+        message: err.response?.data?.title || 'Inloggningen misslyckades. Kontrollera e-post och lösenord.' 
+      };
     }
   };
 
   const register = async (email, password) => {
     try {
-      await api.post('/auth/register', { email, password });
+      await authApi.post('/auth/register', { email, password });
       return await login(email, password);
     } catch (err) {
       console.error('Registreringsfel:', err);
@@ -42,7 +44,6 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('userEmail');
-    localStorage.removeItem('token');
   };
 
   return (
