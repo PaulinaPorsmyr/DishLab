@@ -16,17 +16,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DishLabDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentityApiEndpoints<User>(options =>
+builder.Services.AddIdentityCore<User>(options =>
 {
     options.User.RequireUniqueEmail = true;
 })
 .AddRoles<IdentityRole<int>>()
-.AddEntityFrameworkStores<DishLabDBContext>();
+.AddEntityFrameworkStores<DishLabDBContext>()
+.AddApiEndpoints();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None;
     options.Events.OnRedirectToLogin = context =>
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -38,6 +40,9 @@ builder.Services.ConfigureApplicationCookie(options =>
         return Task.CompletedTask;
     };
 });
+
+builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddIdentityCookies();
 
 builder.Services.AddScoped<IDishRepository, DishRepository>();
 builder.Services.AddScoped<IDishVariationRepository, DishVariationRepository>();
