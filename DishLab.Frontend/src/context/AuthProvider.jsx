@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { AuthContext } from './AuthContext';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5255';
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
@@ -18,7 +20,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5255/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -31,7 +33,7 @@ export function AuthProvider({ children }) {
       const data = await response.json();
       setToken(data.accessToken);
       setUser({ email });
-      localStorage.setItem('userEmail', email); // 👈 Spara e-posten
+      localStorage.setItem('userEmail', email);
       return { success: true };
     } catch (err) {
       console.error('Inloggningsfel:', err);
@@ -41,7 +43,7 @@ export function AuthProvider({ children }) {
 
   const register = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5255/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -68,7 +70,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('userEmail'); // 👈 Rensa vid utloggning
+    localStorage.removeItem('userEmail');
   };
 
   return (
