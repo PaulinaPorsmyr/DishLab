@@ -24,6 +24,9 @@ builder.Services.AddIdentityCore<User>(options =>
 .AddEntityFrameworkStores<DishLabDBContext>()
 .AddApiEndpoints();
 
+builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+    .AddIdentityCookies();
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
@@ -41,14 +44,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
-builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
-    .AddIdentityCookies();
-
 builder.Services.AddScoped<IDishRepository, DishRepository>();
 builder.Services.AddScoped<IDishVariationRepository, DishVariationRepository>();
 builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
 builder.Services.AddScoped<IRatingRepository, RatingRepository>();
-
 builder.Services.AddScoped<IDishService, DishService>();
 builder.Services.AddScoped<IIngredientService, IngredientService>();
 builder.Services.AddScoped<IDishVariationService, DishVariationService>();
@@ -93,7 +92,6 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendDev");
-
 app.UseAuthentication();
 app.UseAuthorization();
 
