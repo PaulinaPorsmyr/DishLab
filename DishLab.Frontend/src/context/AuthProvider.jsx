@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { AuthContext } from './AuthContext';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5255';
+import api from '../services/api';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -11,54 +10,36 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login?useCookies=true`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        return { success: false, message: 'Inloggningen misslyckades. Kontrollera e-post och lösenord.' };
-      }
+      await api.post('/auth/login?useCookies=true', { email, password });
 
       setUser({ email });
       localStorage.setItem('userEmail', email);
       return { success: true };
     } catch (err) {
       console.error('Inloggningsfel:', err);
-      return { success: false, message: 'Kunde inte ansluta till servern.' };
+      const message = err.response?.data?.title || 'Inloggningen misslyckades. Kontrollera e-post och lösenord.';
+      return { success: false, message };
     }
   };
 
   const register = async (email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        let errorMsg = 'Registreringen misslyckades.';
-        
-        if (errorData?.errors) {
-          errorMsg = Object.values(errorData.errors)[0]?.[0] || errorMsg;
-        }
-
-        return { success: false, message: errorMsg };
-      }
-
+      await api.post('/auth/register', { email, password });
       return await login(email, password);
     } catch (err) {
       console.error('Registreringsfel:', err);
-      return { success: false, message: 'Kunde inte ansluta till servern.' };
+      let errorMsg = 'Registreringen misslyckades.';
+      const errorData = err.response?.data;
+
+      if (errorData?.errors) {
+        errorMsg = Object.values(errorData.errors)[0]?.[0] || errorMsg;
+      }
+
+      return { success: false, message: errorMsg };
     }
   };
 
-  const logout = async () => {
+  const logout = () => {
     setUser(null);
     localStorage.removeItem('userEmail');
     localStorage.removeItem('token');
