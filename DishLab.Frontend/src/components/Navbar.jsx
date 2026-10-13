@@ -1,7 +1,18 @@
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    const result = await logout();
+
+    navigate('/login', {
+      replace: true,
+      state: result.success ? null : { logoutError: result.message },
+    });
+  };
 
   return (
     <header style={headerStyle}>
@@ -16,7 +27,7 @@ export default function Navbar() {
               Inloggad som: <strong>{user.email}</strong>
             </span>
           )}
-          <button onClick={logout} style={logoutBtnStyle}>
+          <button onClick={handleLogout} style={logoutBtnStyle}>
             Logga ut
           </button>
         </div>

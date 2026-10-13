@@ -41,9 +41,20 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('userEmail');
+  const logout = async () => {
+    try {
+      await authApi.post('/auth/logout');
+      return { success: true };
+    } catch (err) {
+      console.error('Utloggningen från servern misslyckades:', err);
+      return {
+        success: false,
+        message: 'Du loggades ut här, men servern kunde inte bekräfta utloggningen.',
+      };
+    } finally {
+      setUser(null);
+      localStorage.removeItem('userEmail');
+    }
   };
 
   return (
