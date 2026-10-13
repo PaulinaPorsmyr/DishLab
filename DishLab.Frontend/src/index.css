@@ -1,3 +1,93 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  background: hotpink;
+}
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgb(76 5 25 / 20%);
+}
+
+.auth-card h2,
+.auth-switch {
+  text-align: center;
+}
+
+.auth-card h2 {
+  margin: 0 0 24px;
+  color: #27212a;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-field label {
+  color: #302631;
+  font-weight: bold;
+}
+
+.auth-field input,
+.auth-submit {
+  border-radius: 8px;
+  font: inherit;
+}
+
+.auth-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #c9bfc5;
+}
+
+.auth-submit {
+  padding: 13px 16px;
+  border: 0;
+  background: #a30c50;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.auth-switch {
+  margin: 24px 0 0;
+  color: #302631;
+}
+
+.auth-switch a {
+  color: #8f0846;
+  font-weight: bold;
+}
+
+.auth-error {
+  margin: 0 0 18px;
+  color: #b42318;
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 24px;
+  }
+}
